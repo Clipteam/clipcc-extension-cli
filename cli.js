@@ -28,10 +28,13 @@ const cmdline = {
 const scripts = {
     plain: {
         "build": "rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist && node build.js",
+        "build:dist": "NODE_ENV=production npm run build"
+    },
+    yarn: {
         "build:dist": "NODE_ENV=production yarn run build"
     },
     webpack: {
-        "build": "rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist && webpack --colors --bail"
+        "build": "rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist && webpack --bail"
     }
 }
 
@@ -137,8 +140,8 @@ async function main() {
         message: 'Use git?'
     }]);
     if (git) await initGit();
-    await createPackage([ bundler ], packageMeta, '.');
-    await installDependency(pkg, [ bundler ]);
+    await createPackage([ pkg, bundler ], packageMeta, '.');
+    await installDependency(pkg, [ pkg, bundler ]);
 }
 
 const argv = yargs(hideBin(process.argv))
