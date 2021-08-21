@@ -37,7 +37,7 @@ const scripts = {
 };
 
 const copyFormatFiles = {
-    plain: [ '.gitignore', 'locales', 'index.js' ],
+    plain: [ '.gitignore_', 'locales', 'index.js' ],
     webpack: [ 'webpack.config.js' ]
 };
 
@@ -114,6 +114,7 @@ function copyFileWithFormat(from, to, fmt) {
         if (!fs.existsSync(to)) fs.mkdirSync(to);
         return Promise.all(files.map(file => copyFileWithFormat(path.join(from, file), path.join(to, file), fmt)));
     }
+    to = to.replace(/_$/, '');
     return new Promise((resolve, reject) => {
         fs.promises.readFile(from, { encoding: 'utf-8' })
             .then(data => fs.promises.writeFile(to, formatString(data, fmt), { encoding: 'utf-8' }))
@@ -130,6 +131,7 @@ function copyFile(from, to) {
         if (!fs.existsSync(to)) fs.mkdirSync(to);
         return Promise.all(files.map(file => copyFile(path.join(from, file), path.join(to, file))));
     }
+    to = to.replace(/_$/, '');
     return new Promise((resolve, reject) => {
         fs.promises.copyFile(from, to).then(_ => {
             process.stdout.write(`Copied ${from} -> ${to}.\n`);
