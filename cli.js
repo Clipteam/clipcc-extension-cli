@@ -9,8 +9,6 @@ const mergeUtil = require('merge-util');
 const chalk = require('chalk');
 const inquirer = require('inquirer');
 
-const { copyTemplate } = require('./util');
-
 const dependency = {
     plain: [ 'clipcc-extension' ]
 };
@@ -23,7 +21,7 @@ const devDependency = {
 const cmdline = {
     npm: [ 'npm install --save %s', 'npm install --save-dev %s' ],
     yarn: [ 'yarn add %s', 'yarn add -D %s' ]
-}
+};
 
 const scripts = {
     plain: {
@@ -36,6 +34,22 @@ const scripts = {
     webpack: {
         "build": "rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist && webpack --bail"
     }
+};
+
+const copyFormatFiles = {
+    plain: [ '.gitignore', 'locales', 'index.js' ],
+    webpack: [ 'webpack.config.js' ]
+};
+
+const copyFiles = {
+    plain: [ 'assets' ]  
+};
+
+function clone(obj) {
+    let res = Array.isArray(obj) ? [] : {};
+    if (typeof obj !== 'object') return obj;
+    for (const key in obj) res[key] = typeof obj[key] === 'object' ? clone(obj[key]) : obj[key];
+    return res;
 }
 
 function runCmd(str) {
@@ -51,21 +65,15 @@ function initGit() {
     return runCmd('git init');
 }
 
-function convertIdToPacakgeName(id) {
-    return 'clipcc-extension-' + id.replace('.', '-');
-}
-
 function convertAuthor(author) {
     return author.includes(',') ? author.split(',').map(v => v.trim()) : author;
 }
 
 function createPackage(types, meta, root) {
     let script = scripts.plain;
-    for (const type of types) {
-        script = mergeUtil(script, scripts[type]);
-    }
+    for (const type of types) script = mergeUtil(script, scripts[type]);
     const pkgInfo = {
-        name: convertIdToPacakgeName(meta.id),
+        name: 'clipcc-extension-' + meta.id.replace('.', '-'),
         version: meta.version,
         author: convertAuthor(meta.author),
         scripts: script,
@@ -79,14 +87,14 @@ function createPackage(types, meta, root) {
         api: 1
     };
     return Promise.all([
-        fs.writeFile(path.join(root, 'package.json'), JSON.stringify(pkgInfo, null, 4)),
-        fs.writeFile(path.join(root, 'info.json'), JSON.stringify(info, null, 4))
+        fs.promises.writeFile(path.join(root, 'package.json'), JSON.stringify(pkgInfo, null, 4)),
+        fs.promises.writeFile(path.join(root, 'info.json'), JSON.stringify(info, null, 4))
     ]);
 }
 
 async function installDependency(pkg, types) {
-    const dep = dependency.plain;
-    const dev = devDependency.plain;
+    const dep = [];
+    const dev = [];
     for (const type of types) {
         if (dependency.hasOwnProperty(type)) dep.push(...dependency[type]);
         if (devDependency.hasOwnProperty(type)) dev.push(...devDependency[type]);
@@ -95,7 +103,61 @@ async function installDependency(pkg, types) {
         .then(_ => runCmd(util.format(cmdline[pkg][1], dev.join(' '))));
 }
 
-async function main() {
+function formatString(data, fmt) {
+    for (const key in fmt) data = data.replace(RegExp(`(?<!%)%\\[${key}\\]`, 'g'), fmt[key]);
+    return data;
+}
+
+function copyFileWithFormat(from, to, fmt) {
+    if (fs.statSync(from).isDirectory()) {
+        const files = fs.readdirSync(from);
+        if (!fs.existsSync(to)) fs.mkdirSync(to);
+        return Promise.all(files.map(file => copyFileWithFormat(path.join(from, file), path.join(to, file), fmt)));
+    }
+    return new Promise((resolve, reject) => {
+        fs.promises.readFile(from, { encoding: 'utf-8' })
+            .then(data => fs.promises.writeFile(to, formatString(data, fmt), { encoding: 'utf-8' }))
+            .then(_ => {
+                process.stdout.write(`Copied ${from} -> ${to}.\n`);
+                resolve();
+            });
+    });
+}
+
+function copyFile(from, to) {
+    if (fs.statSync(from).isDirectory()) {
+        const files = fs.readdirSync(from);
+        if (!fs.existsSync(to)) fs.mkdirSync(to);
+        return Promise.all(files.map(file => copyFile(path.join(from, file), path.join(to, file))));
+    }
+    return new Promise((resolve, reject) => {
+        fs.promises.copyFile(from, to).then(_ => {
+            process.stdout.write(`Copied ${from} -> ${to}.\n`);
+            resolve();
+        });
+    });
+}
+
+function copyFilesToDir(types, root, fmt) {
+    const pr = [];
+    for (const type of types) {
+        if (copyFiles.hasOwnProperty(type)) {
+            pr.push(copyFiles[type].map(file => copyFile(
+                path.join(path.dirname(__filename), 'template', file),
+                path.join(root, file)
+            )));
+        }
+        if (copyFormatFiles.hasOwnProperty(type)) {
+            pr.push(copyFormatFiles[type].map(file => copyFileWithFormat(
+                path.join(path.dirname(__filename), 'template', file),
+                path.join(root, file), fmt
+            )));
+        }
+    }
+    return Promise.all(pr);
+}
+
+async function interactive() {
     process.stdout.write('Welcome to use clipcc-extension-cli!\n');
     const packageMeta = await inquirer.prompt([{
         type: 'input',
@@ -139,9 +201,10 @@ async function main() {
         name: 'git',
         message: 'Use git?'
     }]);
+    await createPackage([ 'plain', pkg, bundler ], packageMeta, '.');
+    await copyFilesToDir([ 'plain', pkg, bundler ], '.', { ...packageMeta });
+    await installDependency(pkg, [ 'plain', pkg, bundler ]);
     if (git) await initGit();
-    await createPackage([ pkg, bundler ], packageMeta, '.');
-    await installDependency(pkg, [ pkg, bundler ]);
 }
 
 const argv = yargs(hideBin(process.argv))
@@ -150,45 +213,15 @@ const argv = yargs(hideBin(process.argv))
         version: {
             alias: 'v',
             description: 'Show version.'
-        },
-        generate: {
-            alias: 'g',
-            description: 'Generate project in current directory.'
         }
     })
-    .command('ccext-cli --generate')
     .argv;
 
 if (argv.generate) {
-    const cwd = process.cwd();
-    if (!fs.existsSync(path.join(cwd, 'package.json'))) {
-        console.log('No package.json.');
-        return;
-    }
-    console.log('Writing package.json');
-    let data = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf-8'));
-    data = JSON.stringify(mergeUtil(data, {
-        dependencies: {
-            'clipcc-extension': '^0.1.1'
-        },
-        devDependencies: {
-            'copy-webpack-plugin': '^6.2.0',
-            'mkdirp': '^1.0.4',
-            'rimraf': '^3.0.2',
-            'webpack': '^4.44.2',
-            'webpack-cli': '^3.3.12',
-            'zip-webpack-plugin': '^3.0.0'
-        },
-        main: 'dist/main.js',
-        scripts: {
-            'build': 'rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist && webpack --colors --bail'
-        }
-    }), null, 4);
-    fs.writeFileSync(path.join(cwd, 'package.json'), data);
-    copyTemplate(cwd);
+    process.stdout.write(chalk.red('Unsupported --generate.\n'));
 }
 else {
-    main();
+    interactive();
 }
 
 

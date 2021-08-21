@@ -11,8 +11,12 @@ node_modules/
 .yarn-integrity
 .yarn/*
 !.yarn/patches
-#!.yarn/releases
-#!.yarn/plugins
-#!.yarn/sdks
-#!.yarn/versions
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
 .pnp.*
+
+# Develop
+dist
+build

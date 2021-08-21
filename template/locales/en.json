@@ -1,0 +1,6 @@
+{
+    "%[id].name": "%[name]",
+    "%[id].description": "%[description]",
+    "%[id].category": "Hello",
+    "%[id].hello": "say helo"
+}
