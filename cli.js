@@ -20,7 +20,8 @@ const devDependency = {
 
 const cmdline = {
     npm: [ 'npm install --save %s', 'npm install --save-dev %s' ],
-    yarn: [ 'yarn add %s', 'yarn add -D %s' ]
+    yarn: [ 'yarn add %s', 'yarn add -D %s' ],
+    berry: [ 'yarn add %s', 'yarn add -D %s' ]
 };
 
 const scripts = {
@@ -29,6 +30,9 @@ const scripts = {
         "build:dist": "NODE_ENV=production npm run build"
     },
     yarn: {
+        "build:dist": "NODE_ENV=production yarn run build"
+    },
+    berry: {
         "build:dist": "NODE_ENV=production yarn run build"
     },
     webpack: {
@@ -59,10 +63,6 @@ function runCmd(str) {
     return new Promise((resolve, _) => {
         sp.on('close', code => resolve(code));
     });
-}
-
-function initGit() {
-    return runCmd('git init');
 }
 
 function convertAuthor(author) {
@@ -192,7 +192,7 @@ async function interactive() {
         type: 'list',
         name: 'pkg',
         message: 'Choose your package manager:',
-        choices: [ 'npm', 'yarn' /*, 'berry'*/ ]
+        choices: [ 'npm', 'yarn', 'berry' ]
     }, {
         type: 'list',
         name: 'bundler',
@@ -203,9 +203,13 @@ async function interactive() {
         name: 'git',
         message: 'Use git?'
     }]);
+    if (pkg === 'berry') {
+        await runCmd('yarn set version berry');
+        await runCmd('yarn set version latest');
+    }
     await createPackage([ 'plain', pkg, bundler ], packageMeta, '.');
     await copyFilesToDir([ 'plain', pkg, bundler ], '.', { ...packageMeta });
-    if (git) await initGit();
+    if (git) await runCmd('git init');
     await installDependency(pkg, [ 'plain', pkg, bundler ]);
 }
 
