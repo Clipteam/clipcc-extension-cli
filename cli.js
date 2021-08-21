@@ -203,8 +203,8 @@ async function interactive() {
     }]);
     await createPackage([ 'plain', pkg, bundler ], packageMeta, '.');
     await copyFilesToDir([ 'plain', pkg, bundler ], '.', { ...packageMeta });
-    await installDependency(pkg, [ 'plain', pkg, bundler ]);
     if (git) await initGit();
+    await installDependency(pkg, [ 'plain', pkg, bundler ]);
 }
 
 const argv = yargs(hideBin(process.argv))
