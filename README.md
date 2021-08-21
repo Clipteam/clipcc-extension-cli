@@ -2,13 +2,12 @@
 
 ## Usage
 
-## Build by Your Own
-
-### Requirements
-
-Yarn 3
+```bash
+npm install -g clipcc-extension-cli
+# or
+yarn global add
+```
 
 ```bash
-yarn set version berry
-yarn set version 3.0.0-rc.2
+ccext-cli
 ```
