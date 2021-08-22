@@ -160,7 +160,14 @@ function copyFilesToDir(types, root, fmt) {
 }
 
 async function interactive() {
-    process.stdout.write('Welcome to use clipcc-extension-cli!\n');
+    console.log(` ____
+/    \\
+|    |
+| |  |     Welcome to use ${chalk.cyan('clipcc-extension-cli')}!
+| |  | |   Version: ${chalk.yellow(require('./package.json').version)}
+\\ \\__/ /
+ \\____/\n`);
+
     const packageMeta = await inquirer.prompt([{
         type: 'input',
         name: 'id',
@@ -229,5 +236,3 @@ if (argv.generate) {
 else {
     interactive();
 }
-
-
