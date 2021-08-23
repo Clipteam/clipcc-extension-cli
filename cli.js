@@ -15,7 +15,8 @@ const dependency = {
 
 const devDependency = {
     plain: [ 'mkdirp', 'rimraf' ],
-    webpack: [ 'webpack', 'webpack-cli', 'copy-webpack-plugin', 'zip-webpack-plugin' ]
+    webpack: [ 'webpack', 'webpack-cli', 'copy-webpack-plugin', 'zip-webpack-plugin' ],
+    typescript: [ 'typescript', 'ts-loader' ]
 };
 
 const cmdline = {
@@ -41,8 +42,9 @@ const scripts = {
 };
 
 const copyFormatFiles = {
-    plain: [ '.gitignore_', 'locales', 'index.js' ],
-    webpack: [ 'webpack.config.js' ]
+    plain: [ { from: '.gitignore_', to: '.gitignore' }, 'locales' ],
+    javascript: [ { from: 'js.webpack.config.js', to: 'webpack.config.js' }, 'index.js' ],
+    typescript: [ { from: 'ts.webpack.config.js', to: 'webpack.config.js' }, 'tsconfig.json', 'index.ts' ]
 };
 
 const copyFiles = {
@@ -114,7 +116,6 @@ function copyFileWithFormat(from, to, fmt) {
         if (!fs.existsSync(to)) fs.mkdirSync(to);
         return Promise.all(files.map(file => copyFileWithFormat(path.join(from, file), path.join(to, file), fmt)));
     }
-    to = to.replace(/_$/, '');
     return new Promise((resolve, reject) => {
         fs.promises.readFile(from, { encoding: 'utf-8' })
             .then(data => fs.promises.writeFile(to, formatString(data, fmt), { encoding: 'utf-8' }))
@@ -131,7 +132,6 @@ function copyFile(from, to) {
         if (!fs.existsSync(to)) fs.mkdirSync(to);
         return Promise.all(files.map(file => copyFile(path.join(from, file), path.join(to, file))));
     }
-    to = to.replace(/_$/, '');
     return new Promise((resolve, reject) => {
         fs.promises.copyFile(from, to).then(_ => {
             process.stdout.write(`Copied ${from} -> ${to}.\n`);
@@ -144,16 +144,24 @@ function copyFilesToDir(types, root, fmt) {
     const pr = [];
     for (const type of types) {
         if (copyFiles.hasOwnProperty(type)) {
-            pr.push(copyFiles[type].map(file => copyFile(
-                path.join(path.dirname(__filename), 'template', file),
-                path.join(root, file)
-            )));
+            pr.push(copyFiles[type].map(file => typeof(file) === 'string' ?
+                copyFile(
+                    path.join(path.dirname(__filename), 'template', file),
+                    path.join(root, file)
+                ) : copyFile(
+                    path.join(path.dirname(__filename), 'template', file.from),
+                    path.join(root, file.to)
+                )));
         }
         if (copyFormatFiles.hasOwnProperty(type)) {
-            pr.push(copyFormatFiles[type].map(file => copyFileWithFormat(
-                path.join(path.dirname(__filename), 'template', file),
-                path.join(root, file), fmt
-            )));
+            pr.push(copyFormatFiles[type].map(file => typeof(file) === 'string' ?
+                copyFileWithFormat(
+                    path.join(path.dirname(__filename), 'template', file),
+                    path.join(root, file), fmt
+                ): copyFileWithFormat(
+                    path.join(path.dirname(__filename), 'template', file.from),
+                    path.join(root, file.to), fmt
+                )));
         }
     }
     return Promise.all(pr);
@@ -194,7 +202,7 @@ async function interactive() {
         type: 'list',
         name: 'lang',
         message: 'Choose your development language:',
-        choices: [ 'JavaScript' /*, 'TypeScript'*/ ]
+        choices: [ 'javascript', 'typescript' ]
     }, {
         type: 'list',
         name: 'pkg',
@@ -214,8 +222,8 @@ async function interactive() {
         await runCmd('yarn set version berry');
         await runCmd('yarn set version latest');
     }
-    await createPackage([ 'plain', pkg, bundler ], packageMeta, '.');
-    await copyFilesToDir([ 'plain', pkg, bundler ], '.', { ...packageMeta });
+    await createPackage([ 'plain', pkg, bundler, lang ], packageMeta, '.');
+    await copyFilesToDir([ 'plain', pkg, bundler, lang ], '.', { ...packageMeta });
     if (git) await runCmd('git init');
     await installDependency(pkg, [ 'plain', pkg, bundler ]);
 }

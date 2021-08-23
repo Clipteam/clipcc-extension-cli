@@ -6,13 +6,27 @@ const info = require('./info.json');
 
 const config = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-    entry: './index.js',
+    entry: './index.ts',
     output: {
         filename: 'main.js',
-        path: path.resolve(__dirname, 'build')
+        path: path.resolve(__dirname, 'build'),
+        library: {
+            type: 'commonjs2'
+        },
+        libraryExport: 'default'
     },
     externals: {
         'clipcc-extension': 'ClipCCExtension'
+    },
+    externalsType: 'global',
+    module: {
+        rules: [{
+            test: /\.tsx?$/,
+            loader: 'ts-loader'
+        }]
+    },
+    resolve: {
+        extensions: [ '.ts', '.js' ]
     },
     plugins: [
         new CopyWebpackPlugin({
