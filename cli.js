@@ -10,19 +10,19 @@ const chalk = require('chalk');
 const inquirer = require('inquirer');
 
 const dependency = {
-    plain: [ 'clipcc-extension' ]
+    plain: ['clipcc-extension']
 };
 
 const devDependency = {
-    plain: [ 'mkdirp', 'rimraf' ],
-    webpack: [ 'webpack', 'webpack-cli', 'copy-webpack-plugin', 'zip-webpack-plugin' ],
-    typescript: [ 'typescript', 'ts-loader' ]
+    plain: ['mkdirp', 'rimraf'],
+    webpack: ['webpack', 'webpack-cli', 'copy-webpack-plugin', 'zip-webpack-plugin'],
+    typescript: ['typescript', 'ts-loader']
 };
 
 const cmdline = {
-    npm: [ 'npm install --save %s', 'npm install --save-dev %s' ],
-    yarn: [ 'yarn add %s', 'yarn add -D %s' ],
-    berry: [ 'yarn add %s', 'yarn add -D %s' ]
+    npm: ['npm install --save %s', 'npm install --save-dev %s'],
+    yarn: ['yarn add %s', 'yarn add -D %s'],
+    berry: ['yarn add %s', 'yarn add -D %s']
 };
 
 const scripts = {
@@ -42,15 +42,16 @@ const scripts = {
 };
 
 const copyFormatFiles = {
-    plain: [ { from: '.gitignore_', to: '.gitignore' }, 'locales' ],
-    javascript: [ { from: 'js.webpack.config.js', to: 'webpack.config.js' }, 'index.js' ],
-    typescript: [ { from: 'ts.webpack.config.js', to: 'webpack.config.js' }, 'tsconfig.json', 'index.ts' ]
+    plain: [{ from: '.gitignore_', to: '.gitignore' }, 'locales'],
+    javascript: [{ from: 'js.webpack.config.js', to: 'webpack.config.js' }, 'index.js'],
+    typescript: [{ from: 'ts.webpack.config.js', to: 'webpack.config.js' }, 'tsconfig.json', 'index.ts']
 };
 
 const copyFiles = {
-    plain: [ 'assets' ]  
+    plain: ['assets']
 };
 
+// 定义了没调用，这是啥
 function clone(obj) {
     let res = Array.isArray(obj) ? [] : {};
     if (typeof obj !== 'object') return obj;
@@ -58,16 +59,23 @@ function clone(obj) {
     return res;
 }
 
+// 运行shell命令
 function runCmd(str) {
-    process.stdout.write(chalk.cyan(`\$ ${str}\n`));
-    const [ cmd, ...arg ] = str.split(' ').filter(v => v.length);
-    const sp = spawn(cmd, arg, { encoding: 'utf-8', stdio: 'inherit' });
     return new Promise((resolve, _) => {
-        sp.on('close', code => resolve(code));
+        // 回显执行的命令，青色
+        process.stdout.write(chalk.cyan(`\$ ${str}\n`));
+        // 解析传入的str：cmd为命令，arg是数组形式的参数
+        const [cmd, ...arg] = str.split(' ').filter(v => v.length);
+        // 把子进程的stdout和stderr打在公屏上
+        const sp = spawn(cmd, arg, { encoding: 'utf-8', stdio: 'inherit' });
+        // 子进程退出，把返回码传给回调
+        sp.on('close', (code) => resolve(code));
     });
 }
 
 function convertAuthor(author) {
+    // 如果有多位作者，以逗号为分隔符将author转换为数组
+    // 例： "Alice, Bob" => ["Alice","Bob"]
     return author.includes(',') ? author.split(',').map(v => v.trim()) : author;
 }
 
@@ -144,7 +152,7 @@ function copyFilesToDir(types, root, fmt) {
     const pr = [];
     for (const type of types) {
         if (copyFiles.hasOwnProperty(type)) {
-            pr.push(copyFiles[type].map(file => typeof(file) === 'string' ?
+            pr.push(copyFiles[type].map(file => typeof (file) === 'string' ?
                 copyFile(
                     path.join(path.dirname(__filename), 'template', file),
                     path.join(root, file)
@@ -154,11 +162,11 @@ function copyFilesToDir(types, root, fmt) {
                 )));
         }
         if (copyFormatFiles.hasOwnProperty(type)) {
-            pr.push(copyFormatFiles[type].map(file => typeof(file) === 'string' ?
+            pr.push(copyFormatFiles[type].map(file => typeof (file) === 'string' ?
                 copyFileWithFormat(
                     path.join(path.dirname(__filename), 'template', file),
                     path.join(root, file), fmt
-                ): copyFileWithFormat(
+                ) : copyFileWithFormat(
                     path.join(path.dirname(__filename), 'template', file.from),
                     path.join(root, file.to), fmt
                 )));
@@ -167,6 +175,7 @@ function copyFilesToDir(types, root, fmt) {
     return Promise.all(pr);
 }
 
+// 主函数
 async function interactive() {
     console.log(` ____
 /    \\
@@ -202,17 +211,17 @@ async function interactive() {
         type: 'list',
         name: 'lang',
         message: 'Choose your development language:',
-        choices: [ 'javascript', 'typescript' ]
+        choices: ['javascript', 'typescript']
     }, {
         type: 'list',
         name: 'pkg',
         message: 'Choose your package manager:',
-        choices: [ 'npm', 'yarn', 'berry' ]
+        choices: ['npm', 'yarn', 'berry']
     }, {
         type: 'list',
         name: 'bundler',
         message: 'Choose your bundler:',
-        choices: [ 'webpack' /*, 'snowpack'*/ ]
+        choices: ['webpack' /*, 'snowpack'*/]
     }, {
         type: 'confirm',
         name: 'git',
@@ -222,12 +231,13 @@ async function interactive() {
         await runCmd('yarn set version berry');
         await runCmd('yarn set version latest');
     }
-    await createPackage([ 'plain', pkg, bundler, lang ], packageMeta, '.');
-    await copyFilesToDir([ 'plain', pkg, bundler, lang ], '.', { ...packageMeta });
+    await createPackage(['plain', pkg, bundler, lang], packageMeta, '.');
+    await copyFilesToDir(['plain', pkg, bundler, lang], '.', { ...packageMeta });
     if (git) await runCmd('git init');
-    await installDependency(pkg, [ 'plain', pkg, bundler ]);
+    await installDependency(pkg, ['plain', pkg, bundler]);
 }
 
+// -v 开关显示帮助
 const argv = yargs(hideBin(process.argv))
     .usage('Generate ClipCC extension project.')
     .options({
