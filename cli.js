@@ -19,8 +19,9 @@ const devDependency = {
     typescript: ['typescript', 'ts-loader']
 };
 
+// 定义几个宏 [ 安装生产环境依赖 , 安装开发环境依赖 ]
 const cmdline = {
-    npm: ['npm install --save %s', 'npm install --save-dev %s'],
+    npm: ['npm install --save-prod %s', 'npm install --save-dev %s'],
     yarn: ['yarn add %s', 'yarn add -D %s'],
     berry: ['yarn add %s', 'yarn add -D %s']
 };
@@ -189,6 +190,7 @@ async function interactive() {
         type: 'input',
         name: 'id',
         message: 'Extension ID:',
+        // 匹配例如 com.author.extension_name 允许小写字母、数字、下划线
         validate: v => /^([a-z0-9_]+\.)+[a-z0-9_]+$/.test(v) ? true : 'Unvalid ID.'
     }, {
         type: 'input',
@@ -237,7 +239,7 @@ async function interactive() {
     await installDependency(pkg, ['plain', pkg, bundler]);
 }
 
-// -v 开关显示帮助
+// --help 开关显示帮助
 const argv = yargs(hideBin(process.argv))
     .usage('Generate ClipCC extension project.')
     .options({

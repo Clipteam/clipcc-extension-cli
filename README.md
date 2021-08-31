@@ -31,4 +31,4 @@ npm install -g ./clipcc-extension-cli-[VERSION].tgz
 
 Refract Alex | Coffeescript Support | Linux Manpage 
 ------------ | -------------------- | ------------- 
-Almost Done  |         To do        |    To do
+Almost Done  |         To do        |       √
