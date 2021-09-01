@@ -42,6 +42,7 @@ const scripts = {
     }
 };
 
+// 一个映射表，告诉 copyFilesToDir() 怎么复制文件
 const copyFormatFiles = {
     plain: [{ from: '.gitignore_', to: '.gitignore' }, 'locales'],
     javascript: [{ from: 'js.webpack.config.js', to: 'webpack.config.js' }, 'index.js'],
@@ -77,9 +78,14 @@ function runCmd(str) {
 function convertAuthor(author) {
     // 如果有多位作者，以逗号为分隔符将author转换为数组
     // 例： "Alice, Bob" => ["Alice","Bob"]
-    return author.includes(',') ? author.split(',').map(v => v.trim()) : author;
+    if (author.includes(',')) {
+        return author.split(',').map(v => v.trim());
+    } else {
+        return author;
+    }
 }
 
+// 把信息填进 package.json 和 info.json
 function createPackage(types, meta, root) {
     let script = scripts.plain;
     for (const type of types) script = mergeUtil(script, scripts[type]);
@@ -114,18 +120,25 @@ async function installDependency(pkg, types) {
         .then(_ => runCmd(util.format(cmdline[pkg][1], dev.join(' '))));
 }
 
+// 模板字符串格式化，例：%[id]
 function formatString(data, fmt) {
-    for (const key in fmt) data = data.replace(RegExp(`(?<!%)%\\[${key}\\]`, 'g'), fmt[key]);
+    for (const key in fmt) {
+        data = data.replace(RegExp(`(?<!%)%\\[${key}\\]`, 'g'), fmt[key]);
+    }
     return data;
 }
 
 function copyFileWithFormat(from, to, fmt) {
+    // 如果复制源是目录
     if (fs.statSync(from).isDirectory()) {
+        // 获取下面所有文件和子目录
         const files = fs.readdirSync(from);
+        // 目标目录不存在就创建
         if (!fs.existsSync(to)) fs.mkdirSync(to);
+        // 递归复制
         return Promise.all(files.map(file => copyFileWithFormat(path.join(from, file), path.join(to, file), fmt)));
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _) => {
         fs.promises.readFile(from, { encoding: 'utf-8' })
             .then(data => fs.promises.writeFile(to, formatString(data, fmt), { encoding: 'utf-8' }))
             .then(_ => {

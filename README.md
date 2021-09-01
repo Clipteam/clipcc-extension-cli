@@ -1,5 +1,7 @@
 # ClipCC Extension CLI
 
+[![NPM](https://nodei.co/npm/clipcc-extension-cli.png?compact=true)](https://nodei.co/npm/clipcc-extension-cli/)
+
 ## Usage
 
 Please read [ClipCC Extension Writing Guide](https://github.com/Clipteam/clipcc-extension/blob/master/README.md)
@@ -30,5 +32,5 @@ npm install -g ./clipcc-extension-cli-[VERSION].tgz
 ## Fork
 
 Refract Alex | Coffeescript Support | Linux Manpage 
------------- | -------------------- | ------------- 
-Almost Done  |         To do        |       √
+:----------: | :------------------: | :-----------:
+   🔨       |           ⏳          |     ✅
