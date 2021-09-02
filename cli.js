@@ -120,7 +120,7 @@ async function installDependency(pkg, types) {
         .then(_ => runCmd(util.format(cmdline[pkg][1], dev.join(' '))));
 }
 
-// 模板字符串格式化，例：%[id]
+// 格式化模板字符串，例：%[id] => com.author.extension_name
 function formatString(data, fmt) {
     for (const key in fmt) {
         data = data.replace(RegExp(`(?<!%)%\\[${key}\\]`, 'g'), fmt[key]);
@@ -138,8 +138,10 @@ function copyFileWithFormat(from, to, fmt) {
         // 递归复制
         return Promise.all(files.map(file => copyFileWithFormat(path.join(from, file), path.join(to, file), fmt)));
     }
+    // 如果是单个文件
     return new Promise((resolve, _) => {
         fs.promises.readFile(from, { encoding: 'utf-8' })
+            // 先格式化再写到目标
             .then(data => fs.promises.writeFile(to, formatString(data, fmt), { encoding: 'utf-8' }))
             .then(_ => {
                 process.stdout.write(`Copied ${from} -> ${to}.\n`);
@@ -154,7 +156,7 @@ function copyFile(from, to) {
         if (!fs.existsSync(to)) fs.mkdirSync(to);
         return Promise.all(files.map(file => copyFile(path.join(from, file), path.join(to, file))));
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _) => {
         fs.promises.copyFile(from, to).then(_ => {
             process.stdout.write(`Copied ${from} -> ${to}.\n`);
             resolve();
@@ -166,24 +168,38 @@ function copyFilesToDir(types, root, fmt) {
     const pr = [];
     for (const type of types) {
         if (copyFiles.hasOwnProperty(type)) {
-            pr.push(copyFiles[type].map(file => typeof (file) === 'string' ?
-                copyFile(
-                    path.join(path.dirname(__filename), 'template', file),
-                    path.join(root, file)
-                ) : copyFile(
-                    path.join(path.dirname(__filename), 'template', file.from),
-                    path.join(root, file.to)
-                )));
+            pr.push(copyFiles[type].map(
+                file => {
+                    if (typeof (file) === 'string') { // 直接复制
+                        copyFile(
+                            path.join(path.dirname(__filename), 'template', file),
+                            path.join(root, file)
+                        )
+                    } else { // 指定了从哪到哪
+                        copyFile(
+                            path.join(path.dirname(__filename), 'template', file.from),
+                            path.join(root, file.to)
+                        )
+                    }
+                }
+            ));
         }
         if (copyFormatFiles.hasOwnProperty(type)) {
-            pr.push(copyFormatFiles[type].map(file => typeof (file) === 'string' ?
-                copyFileWithFormat(
-                    path.join(path.dirname(__filename), 'template', file),
-                    path.join(root, file), fmt
-                ) : copyFileWithFormat(
-                    path.join(path.dirname(__filename), 'template', file.from),
-                    path.join(root, file.to), fmt
-                )));
+            pr.push(copyFormatFiles[type].map(
+                file => {
+                    if (typeof (file) === 'string') {
+                        copyFileWithFormat(
+                            path.join(path.dirname(__filename), 'template', file),
+                            path.join(root, file), fmt
+                        )
+                    } else {
+                        copyFileWithFormat(
+                            path.join(path.dirname(__filename), 'template', file.from),
+                            path.join(root, file.to), fmt
+                        )
+                    }
+                }
+            ));
         }
     }
     return Promise.all(pr);
@@ -226,7 +242,7 @@ async function interactive() {
         type: 'list',
         name: 'lang',
         message: 'Choose your development language:',
-        choices: ['javascript', 'typescript']
+        choices: ['javascript', 'typescript' /*, 'coffeescript'*/]
     }, {
         type: 'list',
         name: 'pkg',

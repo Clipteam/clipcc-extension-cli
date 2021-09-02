@@ -1,4 +1,4 @@
-ccext-cli
+ccext-cli(1)
 ===========
 
 > The interactive command line utility for creating ClipCC extensions
