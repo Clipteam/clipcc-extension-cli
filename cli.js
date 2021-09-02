@@ -10,19 +10,20 @@ const chalk = require('chalk');
 const inquirer = require('inquirer');
 
 const dependency = {
-    plain: [ 'clipcc-extension' ]
+    plain: ['clipcc-extension']
 };
 
 const devDependency = {
-    plain: [ 'mkdirp', 'rimraf' ],
-    webpack: [ 'webpack', 'webpack-cli', 'copy-webpack-plugin', 'zip-webpack-plugin' ],
-    typescript: [ 'typescript', 'ts-loader' ]
+    plain: ['mkdirp', 'rimraf'],
+    webpack: ['webpack', 'webpack-cli', 'copy-webpack-plugin', 'zip-webpack-plugin'],
+    typescript: ['typescript', 'ts-loader']
 };
 
+// 定义几个宏 [ 安装生产环境依赖 , 安装开发环境依赖 ]
 const cmdline = {
-    npm: [ 'npm install --save %s', 'npm install --save-dev %s' ],
-    yarn: [ 'yarn add %s', 'yarn add -D %s' ],
-    berry: [ 'yarn add %s', 'yarn add -D %s' ]
+    npm: ['npm install --save-prod %s', 'npm install --save-dev %s'],
+    yarn: ['yarn add %s', 'yarn add -D %s'],
+    berry: ['yarn add %s', 'yarn add -D %s']
 };
 
 const scripts = {
@@ -41,16 +42,18 @@ const scripts = {
     }
 };
 
+// 一个映射表，告诉 copyFilesToDir() 怎么复制文件
 const copyFormatFiles = {
-    plain: [ { from: '.gitignore_', to: '.gitignore' }, 'locales' ],
-    javascript: [ { from: 'js.webpack.config.js', to: 'webpack.config.js' }, 'index.js' ],
-    typescript: [ { from: 'ts.webpack.config.js', to: 'webpack.config.js' }, 'tsconfig.json', 'index.ts' ]
+    plain: [{ from: '.gitignore_', to: '.gitignore' }, 'locales'],
+    javascript: [{ from: 'js.webpack.config.js', to: 'webpack.config.js' }, 'index.js'],
+    typescript: [{ from: 'ts.webpack.config.js', to: 'webpack.config.js' }, 'tsconfig.json', 'index.ts']
 };
 
 const copyFiles = {
-    plain: [ 'assets' ]  
+    plain: ['assets']
 };
 
+// 定义了没调用，这是啥
 function clone(obj) {
     let res = Array.isArray(obj) ? [] : {};
     if (typeof obj !== 'object') return obj;
@@ -58,19 +61,31 @@ function clone(obj) {
     return res;
 }
 
+// 运行shell命令
 function runCmd(str) {
-    process.stdout.write(chalk.cyan(`\$ ${str}\n`));
-    const [ cmd, ...arg ] = str.split(' ').filter(v => v.length);
-    const sp = spawn(cmd, arg, { encoding: 'utf-8', stdio: 'inherit' });
     return new Promise((resolve, _) => {
-        sp.on('close', code => resolve(code));
+        // 回显执行的命令，青色
+        process.stdout.write(chalk.cyan(`\$ ${str}\n`));
+        // 解析传入的str：cmd为命令，arg是数组形式的参数
+        const [cmd, ...arg] = str.split(' ').filter(v => v.length);
+        // 把子进程的stdout和stderr打在公屏上
+        const sp = spawn(cmd, arg, { encoding: 'utf-8', stdio: 'inherit' });
+        // 子进程退出，把返回码传给回调
+        sp.on('close', (code) => resolve(code));
     });
 }
 
 function convertAuthor(author) {
-    return author.includes(',') ? author.split(',').map(v => v.trim()) : author;
+    // 如果有多位作者，以逗号为分隔符将author转换为数组
+    // 例： "Alice, Bob" => ["Alice","Bob"]
+    if (author.includes(',')) {
+        return author.split(',').map(v => v.trim());
+    } else {
+        return author;
+    }
 }
 
+// 把信息填进 package.json 和 info.json
 function createPackage(types, meta, root) {
     let script = scripts.plain;
     for (const type of types) script = mergeUtil(script, scripts[type]);
@@ -105,19 +120,28 @@ async function installDependency(pkg, types) {
         .then(_ => runCmd(util.format(cmdline[pkg][1], dev.join(' '))));
 }
 
+// 格式化模板字符串，例：%[id] => com.author.extension_name
 function formatString(data, fmt) {
-    for (const key in fmt) data = data.replace(RegExp(`(?<!%)%\\[${key}\\]`, 'g'), fmt[key]);
+    for (const key in fmt) {
+        data = data.replace(RegExp(`(?<!%)%\\[${key}\\]`, 'g'), fmt[key]);
+    }
     return data;
 }
 
 function copyFileWithFormat(from, to, fmt) {
+    // 如果复制源是目录
     if (fs.statSync(from).isDirectory()) {
+        // 获取下面所有文件和子目录
         const files = fs.readdirSync(from);
+        // 目标目录不存在就创建
         if (!fs.existsSync(to)) fs.mkdirSync(to);
+        // 递归复制
         return Promise.all(files.map(file => copyFileWithFormat(path.join(from, file), path.join(to, file), fmt)));
     }
-    return new Promise((resolve, reject) => {
+    // 如果是单个文件
+    return new Promise((resolve, _) => {
         fs.promises.readFile(from, { encoding: 'utf-8' })
+            // 先格式化再写到目标
             .then(data => fs.promises.writeFile(to, formatString(data, fmt), { encoding: 'utf-8' }))
             .then(_ => {
                 process.stdout.write(`Copied ${from} -> ${to}.\n`);
@@ -132,7 +156,7 @@ function copyFile(from, to) {
         if (!fs.existsSync(to)) fs.mkdirSync(to);
         return Promise.all(files.map(file => copyFile(path.join(from, file), path.join(to, file))));
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _) => {
         fs.promises.copyFile(from, to).then(_ => {
             process.stdout.write(`Copied ${from} -> ${to}.\n`);
             resolve();
@@ -144,29 +168,44 @@ function copyFilesToDir(types, root, fmt) {
     const pr = [];
     for (const type of types) {
         if (copyFiles.hasOwnProperty(type)) {
-            pr.push(copyFiles[type].map(file => typeof(file) === 'string' ?
-                copyFile(
-                    path.join(path.dirname(__filename), 'template', file),
-                    path.join(root, file)
-                ) : copyFile(
-                    path.join(path.dirname(__filename), 'template', file.from),
-                    path.join(root, file.to)
-                )));
+            pr.push(copyFiles[type].map(
+                file => {
+                    if (typeof (file) === 'string') { // 直接复制
+                        copyFile(
+                            path.join(path.dirname(__filename), 'template', file),
+                            path.join(root, file)
+                        )
+                    } else { // 指定了从哪到哪
+                        copyFile(
+                            path.join(path.dirname(__filename), 'template', file.from),
+                            path.join(root, file.to)
+                        )
+                    }
+                }
+            ));
         }
         if (copyFormatFiles.hasOwnProperty(type)) {
-            pr.push(copyFormatFiles[type].map(file => typeof(file) === 'string' ?
-                copyFileWithFormat(
-                    path.join(path.dirname(__filename), 'template', file),
-                    path.join(root, file), fmt
-                ): copyFileWithFormat(
-                    path.join(path.dirname(__filename), 'template', file.from),
-                    path.join(root, file.to), fmt
-                )));
+            pr.push(copyFormatFiles[type].map(
+                file => {
+                    if (typeof (file) === 'string') {
+                        copyFileWithFormat(
+                            path.join(path.dirname(__filename), 'template', file),
+                            path.join(root, file), fmt
+                        )
+                    } else {
+                        copyFileWithFormat(
+                            path.join(path.dirname(__filename), 'template', file.from),
+                            path.join(root, file.to), fmt
+                        )
+                    }
+                }
+            ));
         }
     }
     return Promise.all(pr);
 }
 
+// 主函数
 async function interactive() {
     console.log(` ____
 /    \\
@@ -180,6 +219,7 @@ async function interactive() {
         type: 'input',
         name: 'id',
         message: 'Extension ID:',
+        // 匹配例如 com.author.extension_name 允许小写字母、数字、下划线
         validate: v => /^([a-z0-9_]+\.)+[a-z0-9_]+$/.test(v) ? true : 'Unvalid ID.'
     }, {
         type: 'input',
@@ -202,17 +242,17 @@ async function interactive() {
         type: 'list',
         name: 'lang',
         message: 'Choose your development language:',
-        choices: [ 'javascript', 'typescript' ]
+        choices: ['javascript', 'typescript' /*, 'coffeescript'*/]
     }, {
         type: 'list',
         name: 'pkg',
         message: 'Choose your package manager:',
-        choices: [ 'npm', 'yarn', 'berry' ]
+        choices: ['npm', 'yarn', 'berry']
     }, {
         type: 'list',
         name: 'bundler',
         message: 'Choose your bundler:',
-        choices: [ 'webpack' /*, 'snowpack'*/ ]
+        choices: ['webpack' /*, 'snowpack'*/]
     }, {
         type: 'confirm',
         name: 'git',
@@ -222,12 +262,13 @@ async function interactive() {
         await runCmd('yarn set version berry');
         await runCmd('yarn set version latest');
     }
-    await createPackage([ 'plain', pkg, bundler, lang ], packageMeta, '.');
-    await copyFilesToDir([ 'plain', pkg, bundler, lang ], '.', { ...packageMeta });
+    await createPackage(['plain', pkg, bundler, lang], packageMeta, '.');
+    await copyFilesToDir(['plain', pkg, bundler, lang], '.', { ...packageMeta });
     if (git) await runCmd('git init');
-    await installDependency(pkg, [ 'plain', pkg, bundler ]);
+    await installDependency(pkg, ['plain', pkg, bundler]);
 }
 
+// --help 开关显示帮助
 const argv = yargs(hideBin(process.argv))
     .usage('Generate ClipCC extension project.')
     .options({

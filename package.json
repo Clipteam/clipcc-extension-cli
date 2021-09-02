@@ -1,6 +1,6 @@
 {
   "name": "clipcc-extension-cli",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "CLI for ClipCC extension development.",
   "author": "Clip Team",
   "license": "MIT",
@@ -19,5 +19,9 @@
     "merge-util": "^0.3.1",
     "yargs": "^16.1.1"
   },
-  "packageManager": "yarn@3.0.1"
+  "directories": {
+    "man": "doc"
+  },
+  "packageManager": "yarn@3.0.1",
+  "preferGlobal": true
 }
