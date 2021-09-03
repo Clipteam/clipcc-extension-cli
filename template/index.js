@@ -1,6 +1,6 @@
 const { Extension, type, api } = require('clipcc-extension');
 
-class HelloExtension extends Extension {
+class MyExtension extends Extension {
     onInit() {
         api.addCategory({
             categoryId: '%[id].category',
@@ -12,9 +12,9 @@ class HelloExtension extends Extension {
             type: type.BlockType.REPORTER,
             messageId: '%[id].hello',
             categoryId: '%[id].category',
-            function: () => "Hello, ClipCC!"
+            function: () => 'Hello, ClipCC!'
         });
     }
 }
 
-module.exports = HelloExtension;
+module.exports = MyExtension;

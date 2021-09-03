@@ -1,6 +1,6 @@
 import { Extension, api, type } from 'clipcc-extension';
 
-class RandomLibrary extends Extension {
+class MyExtension extends Extension {
     public onInit() {
         api.addCategory({
             categoryId: '%[id].category',
@@ -17,4 +17,4 @@ class RandomLibrary extends Extension {
     }
 }
 
-export default RandomLibrary;
+export default MyExtension;
