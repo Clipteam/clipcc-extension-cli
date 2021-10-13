@@ -53,14 +53,6 @@ const copyFiles = {
     plain: ['assets']
 };
 
-// 定义了没调用，这是啥
-function clone(obj) {
-    let res = Array.isArray(obj) ? [] : {};
-    if (typeof obj !== 'object') return obj;
-    for (const key in obj) res[key] = typeof obj[key] === 'object' ? clone(obj[key]) : obj[key];
-    return res;
-}
-
 // 运行shell命令
 function runCmd(str) {
     return new Promise((resolve, _) => {
