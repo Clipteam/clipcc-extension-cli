@@ -200,7 +200,7 @@ async function interactive() {
         name: 'author',
         message: 'Author:'
     }]);
-    const { lang, pkg, bundler, git } = await inquirer.prompt([{
+    let { lang, pkg, bundler, git } = await inquirer.prompt([{
         type: 'list',
         name: 'lang',
         message: 'Choose your development language:',

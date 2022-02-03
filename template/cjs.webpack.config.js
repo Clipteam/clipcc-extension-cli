@@ -16,7 +16,7 @@ const config = {
         }
     },
     experiments: {
-        outputModule: true,
+        outputModule: true
     },
     externals: {
         'clipcc-extension': 'ClipCCExtension'
