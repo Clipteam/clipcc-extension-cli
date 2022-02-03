@@ -10,9 +10,14 @@ const config = {
     output: {
         filename: 'main.js',
         path: path.resolve(__dirname, 'build'),
+        module: true,
         library: {
-            type: 'commonjs2'
+            type: 'commonjs2',
+            export: 'default'
         }
+    },
+    experiments: {
+        outputModule: true,
     },
     externals: {
         'clipcc-extension': 'ClipCCExtension'

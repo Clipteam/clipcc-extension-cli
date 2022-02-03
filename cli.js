@@ -43,7 +43,14 @@ const scripts = {
 
 const copyFormatFiles = {
     plain: [{ from: '.gitignore_', to: '.gitignore' }, 'locales'],
-    javascript: [{ from: 'js.webpack.config.js', to: 'webpack.config.js' }, 'index.js'],
+    javascript: [
+        { from: 'cjs.webpack.config.js', to: 'webpack.config.js' },
+        { from: 'index.cjs', to: 'index.js' }
+    ],
+    javascriptesm: [
+        { from: 'mjs.webpack.config.js', to: 'webpack.config.js' },
+        { from: 'index.mjs', to: 'index.js' }
+    ],
     typescript: [{ from: 'ts.webpack.config.js', to: 'webpack.config.js' }, 'tsconfig.json', 'index.ts']
 };
 
@@ -197,7 +204,7 @@ async function interactive() {
         type: 'list',
         name: 'lang',
         message: 'Choose your development language:',
-        choices: ['javascript', 'typescript']
+        choices: ['javascript (commonjs)', 'javascript (esmodule)', 'typescript']
     }, {
         type: 'list',
         name: 'pkg',
@@ -213,6 +220,8 @@ async function interactive() {
         name: 'git',
         message: 'Use git?'
     }]);
+    if (lang === 'javascript (commonjs)') lang = 'javascript';
+    else if (lang === 'javascript (esmodule)') lang = 'javascriptesm';
     if (pkg === 'berry') {
         await runCmd('yarn set version berry');
         await runCmd('yarn set version latest');
