@@ -84,9 +84,10 @@ function createPackage(types, meta, root) {
         id: meta.id,
         author: pkgInfo.author,
         version: meta.version,
-        icon: 'assets/icon.jpg',
+        icon: 'assets/icon.png',
         inset_icon: 'assets/inset_icon.svg',
-        api: 1
+        api: 1,
+        optional: false
     };
     return Promise.all([
         fs.promises.writeFile(path.join(root, 'package.json'), JSON.stringify(pkgInfo, null, 4)),

@@ -1,6 +1,6 @@
 {
     "name": "clipcc-extension-cli",
-    "version": "2.1.2",
+    "version": "2.1.3",
     "description": "CLI for ClipCC extension development.",
     "author": "Clip Team",
     "license": "MIT",
