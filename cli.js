@@ -61,7 +61,7 @@ const copyFiles = {
 function runCmd(str) {
     process.stdout.write(chalk.cyan(`$ ${str}\n`));
     const [cmd, ...arg] = str.split(' ').filter(v => v.length);
-    const sp = spawn(cmd, arg, { encoding: 'utf-8', stdio: 'inherit' });
+    const sp = spawn(cmd, arg, { encoding: 'utf-8', stdio: 'inherit', shell: process.platform == 'win32' });
     return new Promise((resolve, reject) => {
         sp.on('close', code => resolve(code));
     });
