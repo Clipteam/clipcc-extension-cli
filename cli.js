@@ -20,10 +20,10 @@ const devDependency = {
 };
 
 const cmdline = {
-    npm: ['npm install --save %s', 'npm install --save-dev %s'],
-    yarn: ['yarn add %s', 'yarn add -D %s'],
-    berry: ['yarn add %s', 'yarn add -D %s'],
-    pnpm: ['pnpm add %s', 'pnpm add -D %s']
+    npm: 'npm install',
+    yarn: 'yarn install',
+    berry: 'yarn install',
+    pnpm: 'pnpm install'
 };
 
 const scripts = {
@@ -78,11 +78,14 @@ function convertAuthor(author) {
 function createPackage(types, meta, root) {
     let script = scripts.plain;
     for (const type of types) script = mergeUtil(script, scripts[type]);
+    const [dev, dep] = getDependency(types);
     const pkgInfo = {
         name: 'clipcc-extension-' + meta.id.replace('.', '-'),
         version: meta.version,
         author: convertAuthor(meta.author),
-        scripts: script
+        scripts: script,
+        dependencies: dep,
+        devDependencies: dev
     };
     const info = {
         id: meta.id,
@@ -99,15 +102,14 @@ function createPackage(types, meta, root) {
     ]);
 }
 
-async function installDependency(pkg, types) {
+function getDependency(types) {
     const dep = [];
     const dev = [];
     for (const type of types) {
         if (dependency.hasOwnProperty(type)) dep.push(...dependency[type]);
         if (devDependency.hasOwnProperty(type)) dev.push(...devDependency[type]);
     }
-    return runCmd(util.format(cmdline[pkg][0], dep.join(' ')))
-        .then(_ => runCmd(util.format(cmdline[pkg][1], dev.join(' '))));
+    return [dep, dev];
 }
 
 function formatString(data, fmt) {
@@ -234,7 +236,7 @@ async function interactive() {
     await createPackage(['plain', pkg, bundler, lang], packageMeta, '.');
     await copyFilesToDir(['plain', pkg, bundler, lang], '.', { ...packageMeta });
     if (git) await runCmd('git init');
-    await installDependency(pkg, ['plain', pkg, bundler, lang]);
+    await runCmd(util.format(cmdline[pkg]));
 }
 
 const argv = yargs(hideBin(process.argv))
@@ -247,9 +249,4 @@ const argv = yargs(hideBin(process.argv))
     })
     .argv;
 
-if (argv.generate) {
-    process.stdout.write(chalk.red('Unsupported --generate.\n'));
-}
-else {
-    interactive();
-}
+interactive();
