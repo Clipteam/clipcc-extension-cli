@@ -239,7 +239,7 @@ async function interactive() {
     await runCmd(util.format(cmdline[pkg]));
 }
 
-const argv = yargs(hideBin(process.argv))
+yargs(hideBin(process.argv))
     .usage('Generate ClipCC extension project.')
     .options({
         version: {
