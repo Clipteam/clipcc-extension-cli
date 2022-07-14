@@ -246,7 +246,6 @@ yargs(hideBin(process.argv))
             alias: 'v',
             description: 'Show version.'
         }
-    })
-    .argv;
+    });
 
 interactive();
