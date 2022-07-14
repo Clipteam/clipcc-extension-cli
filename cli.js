@@ -22,7 +22,8 @@ const devDependency = {
 const cmdline = {
     npm: ['npm install --save %s', 'npm install --save-dev %s'],
     yarn: ['yarn add %s', 'yarn add -D %s'],
-    berry: ['yarn add %s', 'yarn add -D %s']
+    berry: ['yarn add %s', 'yarn add -D %s'],
+    pnpm: ['pnpm add %s', 'pnpm add -D %s']
 };
 
 const scripts = {
@@ -35,6 +36,9 @@ const scripts = {
     },
     berry: {
         'build:dist': 'NODE_ENV=production yarn run build'
+    },
+    pnpm: {
+        'build:dist': 'NODE_ENV=production pnpm run build'
     },
     webpack: {
         'build': 'rimraf ./build && mkdirp build && rimraf ./dist && mkdirp dist && webpack --bail'
@@ -210,7 +214,7 @@ async function interactive() {
         type: 'list',
         name: 'pkg',
         message: 'Choose your package manager:',
-        choices: ['npm', 'yarn', 'berry']
+        choices: ['npm', 'yarn', 'berry', 'pnpm']
     }, {
         type: 'list',
         name: 'bundler',
