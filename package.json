@@ -4,8 +4,12 @@
     "description": "CLI for ClipCC extension development.",
     "author": "Clip Team",
     "license": "MIT",
-    "keywords": ["cli", "clipcc", "extension"],
-    "packageManager": "yarn@3.0.1",
+    "keywords": [
+        "cli",
+        "clipcc",
+        "extension"
+    ],
+    "packageManager": "yarn@3.2.1",
     "main": "cli.js",
     "bin": {
         "ccext-cli": "cli.js"
